@@ -1,0 +1,218 @@
+openapi: 3.0.3
+info:
+  title: Reward Management Service API
+  description: |
+    API for processing user transactions and retrieving generated rewards.
+    The service implements weighted probability logic and utilizes Caffeine for high-speed rule lookups.
+  version: 1.0.0
+servers:
+  - url: /reward-service/api
+    description: Production/Local Server Environment
+tags:
+  - name: Reward Management
+    description: Core APIs for processing transactions and fetching reward history.
+
+paths:
+  # --- 1. POST /process (Main Business Logic) ---
+  /process:
+    post:
+      tags:
+        - Reward Management
+      summary: Process a transaction and generate a weighted reward.
+      description: |
+        Processes an incoming transaction request. It performs an idempotency check 
+        (ensuring the transaction is rewarded only once) and applies a weighted 
+        probability algorithm based on the transaction amount to determine the reward.
+      operationId: processTransaction
+      requestBody:
+        description: Transaction details required to generate a reward.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RewardRequest'
+      responses:
+        '200':
+          description: Reward successfully generated and awarded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardResponse'
+        '400':
+          description: Invalid Request (e.g., missing fields, invalid amounts).
+        '409':
+          description: Conflict. Transaction already processed (Idempotency check failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errorMessage: "Transaction already rewarded"
+        '429':
+          description: Too Many Requests. Rate limit exceeded (Bucket4j rate limiting).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errorMessage: "Rate limit exceeded. Try again in 60 seconds."
+        '500':
+          description: Internal Server Error (e.g., Database failure, Configuration error in reward rules).
+
+  # --- 2. GET /{rewardId} (Fetch Single Reward) ---
+  '/{rewardId}':
+    get:
+      tags:
+        - Reward Management
+      summary: Get reward details by ID.
+      description: Retrieves the detailed record for a specific, previously generated reward.
+      operationId: getRewardById
+      parameters:
+        - name: rewardId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: The unique ID of the reward to retrieve.
+      responses:
+        '200':
+          description: Successfully retrieved the reward details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardResponse'
+        '404':
+          description: Reward not found. (The controller uses the RewardResponse DTO for the 404 body).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardResponse'
+              example:
+                rewardId: null
+                transactionId: null
+                rewardType: null
+                description: null
+                rewardValue: null
+                createdAt: null
+                errorMessage: "Reward not found with id: 12345"
+
+  # --- 3. GET /user/{userId} (Fetch User History) ---
+  '/user/{userId}':
+    get:
+      tags:
+        - Reward Management
+      summary: Get all rewards for a user (Paginated).
+      description: Retrieves a list of rewards associated with a specific user ID, with pagination controls.
+      operationId: getUserRewards
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The unique ID of the user whose rewards are being fetched.
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Page number for pagination (0-indexed).
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+          description: Number of rewards per page.
+      responses:
+        '200':
+          description: List of rewards successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RewardResponse'
+        '500':
+          description: Internal Server Error (e.g., Database connectivity issues).
+
+components:
+  schemas:
+    RewardRequest:
+      type: object
+      required:
+        - userId
+        - transactionId
+        - transactionAmount
+      properties:
+        userId:
+          type: string
+          description: ID of the user initiating the transaction.
+          example: 'user-abc-123'
+        transactionId:
+          type: string
+          description: Unique ID for the transaction (used for idempotency).
+          example: 'txn-20250101-7890'
+        transactionAmount:
+          type: number
+          format: double
+          description: The monetary amount of the transaction.
+          example: 1500.50
+
+    RewardResponse:
+      type: object
+      description: Details of a single awarded reward, or an error message if retrieval failed.
+      properties:
+        rewardId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Unique identifier of the awarded reward.
+          example: 98765
+        userId:
+          type: string
+          nullable: true
+          description: ID of the user who received the reward.
+          example: 'user-abc-123'
+        transactionId:
+          type: string
+          nullable: true
+          description: ID of the transaction that triggered the reward.
+          example: 'txn-20250101-7890'
+        rewardType:
+          type: string
+          nullable: true
+          description: Categorical type (e.g., CASHBACK, VOUCHER, JACKPOT).
+          example: 'CASHBACK'
+        description:
+          type: string
+          nullable: true
+          description: Human-readable description of the reward awarded.
+          example: '₹50 Cashback'
+        rewardValue:
+          type: number
+          format: double
+          nullable: true
+          description: Monetary value of the reward (null if non-monetary like a discount).
+          example: 50.00
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the reward was generated.
+          example: '2025-11-28T16:00:00Z'
+        errorMessage:
+          type: string
+          nullable: true
+          description: Error message if the API failed to fetch the reward (used by the controller for 404).
+          example: null
+
+    ErrorResponse:
+      type: object
+      properties:
+        errorMessage:
+          type: string
+          description: A concise description of the error.
+          example: "The request could not be processed due to a configuration error."

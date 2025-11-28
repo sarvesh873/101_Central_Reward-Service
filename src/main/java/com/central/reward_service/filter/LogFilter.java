@@ -1,4 +1,4 @@
-package com.central.transaction_service.filter;
+package com.central.reward_service.filter;
 
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;

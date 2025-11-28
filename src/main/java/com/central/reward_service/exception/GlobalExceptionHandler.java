@@ -1,7 +1,6 @@
-package com.central.transaction_service.exception;
+package com.central.reward_service.exception;
 
 
-//import org.openapitools.model.ErrorResponse;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

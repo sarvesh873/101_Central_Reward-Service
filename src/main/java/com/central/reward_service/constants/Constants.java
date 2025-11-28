@@ -1,4 +1,4 @@
-package com.central.transaction_service.constants;
+package com.central.reward_service.constants;
 
 public class Constants {
 

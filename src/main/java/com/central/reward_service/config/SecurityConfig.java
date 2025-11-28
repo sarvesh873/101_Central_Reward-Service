@@ -1,4 +1,4 @@
-package com.central.transaction_service.config;
+package com.central.reward_service.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,7 +16,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/**").permitAll()
-                        .requestMatchers("/api/transactions/**").permitAll()
+                        .requestMatchers("/api/rewards/**").permitAll()
                         .anyRequest().authenticated()
                 );
 
