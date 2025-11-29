@@ -1,5 +1,6 @@
 package com.central.reward_service.service;
 
+import org.openapitools.model.RewardClaimResponse;
 import org.openapitools.model.RewardRequest;
 import org.openapitools.model.RewardResponse;
 import org.springframework.http.ResponseEntity;
@@ -15,5 +16,5 @@ public interface RewardService {
     ResponseEntity<RewardResponse> getRewardById(Long rewardId);
     ResponseEntity<List<RewardResponse>> getUserRewards(String userId, Integer page, Integer size);
     ResponseEntity<RewardResponse> processTransaction(RewardRequest request);
-
+    ResponseEntity<RewardClaimResponse> claimReward(Long rewardId);
 }

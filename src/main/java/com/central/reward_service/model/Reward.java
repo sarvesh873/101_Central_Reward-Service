@@ -6,12 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 /**
  * Entity representing a single reward successfully generated and awarded to a user.
@@ -53,13 +49,16 @@ public class Reward {
     @Column(length = 255)
     private String redeemCode;
 
-
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Timestamp createdAt;
 
     @Column(nullable = false)
     private Timestamp expiresAt; // NEW: When the reward coupon expires.
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RewardStatus status;
 
     private Timestamp claimedAt;
 
@@ -70,6 +69,7 @@ public class Reward {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reward_rule_id", nullable = false) // Explicitly set the name
+
     private RewardRule rewardRule;
 
     @PrePersist
@@ -77,5 +77,15 @@ public class Reward {
         Instant now = Instant.now();
         this.createdAt = Timestamp.from(now);
         this.expiresAt = Timestamp.from(now.plus(10, java.time.temporal.ChronoUnit.DAYS));
+        this.status = RewardStatus.UNCLAIMED;
+    }
+
+    @PreUpdate
+    public void updateStatus() {
+        if (status != RewardStatus.CLAIMED) {
+            if (expiresAt != null && expiresAt.before(new Timestamp(System.currentTimeMillis()))) {
+                status = RewardStatus.EXPIRED;
+            }
+        }
     }
 }

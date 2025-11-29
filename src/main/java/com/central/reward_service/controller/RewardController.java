@@ -1,5 +1,6 @@
 package com.central.reward_service.controller;
 
+import org.openapitools.model.RewardClaimResponse;
 import com.central.reward_service.service.RewardService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.openapitools.api.RewardManagementApi;
 import org.openapitools.model.RewardResponse;
 import org.openapitools.model.RewardRequest;
+
 import java.util.List;
 
 /**
@@ -36,4 +38,8 @@ public class RewardController implements RewardManagementApi {
         return rewardService.processTransaction(request);
     }
 
+    @Override
+    public ResponseEntity<RewardClaimResponse> claimReward( Long rewardId) {
+        return rewardService.claimReward(rewardId);
+    }
 }

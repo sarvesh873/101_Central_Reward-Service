@@ -1,9 +1,12 @@
 package com.central.reward_service.service;
 
 
+import com.central.reward_service.exception.RewardClaimException;
+import com.central.reward_service.exception.RewardNotFoundException;
 import com.central.reward_service.kafka.RewardEventProducer;
 import com.central.reward_service.model.Reward;
 import com.central.reward_service.model.RewardRule;
+import com.central.reward_service.model.RewardStatus;
 import com.central.reward_service.repository.RewardRepository;
 import com.central.reward_service.utils.ServiceUtils;
 import jakarta.persistence.EntityNotFoundException;
@@ -13,17 +16,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.openapitools.model.RewardRequest;
 import org.openapitools.model.RewardResponse;
-import java.math.BigDecimal;
-import java.time.Instant;
+import org.openapitools.model.RewardClaimResponse;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -39,6 +42,8 @@ public class RewardServiceImpl implements RewardService {
     private ServiceUtils serviceUtils;
     @Autowired
     private RewardEventProducer rewardEventProducer;
+
+
     @Override
     @Transactional
     public ResponseEntity<RewardResponse>  processTransaction(RewardRequest request) {
@@ -68,7 +73,7 @@ public class RewardServiceImpl implements RewardService {
                 .rewardDescription(selectedRule.getDescription())
                 .rewardValue(rewardValue)
                 .rewardRule(selectedRule)
-                .redeemCode("#@/*-+78(@)")
+                .redeemCode(String.valueOf(UUID.randomUUID()))
                 .build();
         rewardRepository.save(reward);
 
@@ -85,6 +90,48 @@ public class RewardServiceImpl implements RewardService {
         return ResponseEntity.ok(serviceUtils.constructRewardResponse(reward));
     }
 
+    @Override
+    @Transactional
+    public ResponseEntity<RewardClaimResponse> claimReward(Long rewardId) {
+        // 1. Fetch the reward
+        Reward reward = rewardRepository.findById(rewardId)
+                .orElseThrow(() -> new RewardNotFoundException("Reward not found with ID: " + rewardId));
+
+        // 2. Check for expiry
+        if (reward.getStatus() == RewardStatus.EXPIRED ||
+                (reward.getExpiresAt() != null &&
+                        reward.getExpiresAt().before(new Timestamp(System.currentTimeMillis())))) {
+            reward.setStatus(RewardStatus.EXPIRED);
+            rewardRepository.save(reward);
+            throw new RewardClaimException("Reward with ID " + rewardId + " has expired.");
+        }
+
+        // 3. Verify it's in UNCLAIMED state (not already claimed)
+        if (reward.getStatus() != RewardStatus.UNCLAIMED) {
+            throw new RewardClaimException("Reward with ID " + rewardId + " is in an invalid state: " + reward.getStatus());
+        }
+
+        // 4. Generate Redeem Code and Update Status
+        String redeemCode = reward.getRedeemCode();
+        if (redeemCode == null || redeemCode.isEmpty()) {
+            redeemCode = String.valueOf(UUID.randomUUID());
+            reward.setRedeemCode(redeemCode);
+        }
+
+        reward.setStatus(RewardStatus.CLAIMED);
+        reward.setClaimedAt(new Timestamp(System.currentTimeMillis()));
+        rewardRepository.save(reward);
+
+        // 5. Create and return the response
+        RewardClaimResponse response = RewardClaimResponse.builder()
+                .rewardStatus(RewardClaimResponse.RewardStatusEnum.CLAIMED)
+                .expiresAt(reward.getExpiresAt().toInstant().atOffset(java.time.ZoneOffset.UTC))
+                .redeemCode(redeemCode)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
 
 //    ## Reward Retrieval Methods
 
@@ -92,7 +139,7 @@ public class RewardServiceImpl implements RewardService {
     @Cacheable(value = "user_rewards", key = "#rewardId")
     public ResponseEntity<RewardResponse>  getRewardById(Long rewardId) {
         Reward reward = rewardRepository.findById(rewardId)
-                .orElseThrow(() -> new EntityNotFoundException("Reward not found: " + rewardId));
+                .orElseThrow(() -> new RewardNotFoundException("Reward not found with ID: " + rewardId));
         return ResponseEntity.ok(serviceUtils.constructRewardResponse(reward));
     }
 

@@ -97,7 +97,55 @@ paths:
                 createdAt: null
                 errorMessage: "Reward not found with id: 12345"
 
-  # --- 3. GET /user/{userId} (Fetch User History) ---
+  # --- 3. POST /{rewardId}/claim (Claim a Reward) ---
+  '/{rewardId}/claim':
+    post:
+      tags:
+        - Reward Management
+      summary: Claim a reward by ID
+      description: Claims a reward by its ID, marking it as claimed and returning the redeem code.
+      operationId: claimReward
+      parameters:
+        - name: rewardId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: The ID of the reward to claim
+      responses:
+        '200':
+          description: Successfully claimed the reward
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardClaimResponse'
+        '400':
+          description: Bad request (e.g., invalid reward ID)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Reward not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Reward already claimed or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # --- 4. GET /user/{userId} (Fetch User History) ---
   '/user/{userId}':
     get:
       tags:
@@ -186,6 +234,12 @@ components:
           nullable: true
           description: Categorical type (e.g., CASHBACK, VOUCHER, JACKPOT).
           example: 'CASHBACK'
+        rewardStatus:
+          type: string
+          nullable: true
+          description: Current status of the reward (UNCLAIMED, CLAIMED, or EXPIRED).
+          enum: [UNCLAIMED, CLAIMED, EXPIRED]
+          example: 'UNCLAIMED'
         description:
           type: string
           nullable: true
@@ -209,10 +263,40 @@ components:
           description: Error message if the API failed to fetch the reward (used by the controller for 404).
           example: null
 
+    RewardClaimResponse:
+      type: object
+      description: Response containing reward claim details
+      properties:
+        rewardStatus:
+          type: string
+          description: Current status of the reward after claim attempt
+          enum: [UNCLAIMED, CLAIMED, EXPIRED]
+          example: 'CLAIMED'
+        expiresAt:
+          type: string
+          format: date-time
+          description: Timestamp when the reward will expire (if not already expired)
+          example: '2025-12-09T16:00:00Z'
+        redeemCode:
+          type: string
+          description: Unique code to redeem the reward (only present if status is CLAIMED)
+          example: 'a1b2c3d4-e5f6-7890'
+    
     ErrorResponse:
       type: object
+      x-lombok-annotations:
+        - "@lombok.Builder"
       properties:
+        errorCode:
+          type: number
+          format: double
+          description: Numeric error code
+        description:
+          type: string
+          description: Human-readable description providing more details about the error
+        errorType:
+          type: string
+          description: Categorization of the error (e.g., VALIDATION_ERROR, AUTHENTICATION_FAILED)
         errorMessage:
           type: string
-          description: A concise description of the error.
-          example: "The request could not be processed due to a configuration error."
+          description: A brief message summarizing the error condition
