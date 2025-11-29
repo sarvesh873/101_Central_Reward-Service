@@ -1,4 +1,4 @@
-package com.central.transaction_service.config;
+package com.central.reward_service.config;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

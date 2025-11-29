@@ -1,28 +1,58 @@
-package com.central.transaction_service.utils;
+package com.central.reward_service.utils;
 
-import com.central.transaction_service.model.Transaction;
-import org.openapitools.model.TransactionResponse;
+import com.central.reward_service.model.Reward;
+import com.central.reward_service.model.RewardRule;
+import com.central.reward_service.repository.RewardRuleRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
+import org.openapitools.model.RewardResponse;
+import java.math.BigDecimal;
 import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
-public final class ServiceUtils {
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ServiceUtils {
 
-    // Private constructor to prevent instantiation
-    private ServiceUtils() {
-        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    private final RewardRuleRepository ruleRepository;
+
+    /**
+     * This method is CACHED.
+     * It hits the DB only once every hour (or configured time).
+     * It transforms the flat DB list into a highly optimized TreeMap for fast lookup.
+     */
+    @Cacheable(value = "reward_rules", key = "'active_rules'")
+    public TreeMap<Double, List<RewardRule>> getCachedRewardRules() {
+        log.info("Cache Miss: Fetching Reward Rules from Database...");
+
+        List<RewardRule> allRules = ruleRepository.findByActiveTrue();
+
+        // Group by Min Transaction Amount to create Tiers dynamically
+        Map<Double, List<RewardRule>> groupedRules = allRules.stream()
+                .collect(Collectors.groupingBy(RewardRule::getMinTransactionAmount));
+
+        // Convert to TreeMap for range lookups (floorEntry)
+        return new TreeMap<>(groupedRules);
     }
 
-
-    public static TransactionResponse constructTransactionResponse(Transaction transaction){
-        return TransactionResponse.builder()
-                .transactionId(transaction.getTransaction_id())
-                .senderId(transaction.getSenderId())
-                .receiverId(transaction.getReceiverId())
-                .amount(transaction.getAmount())
-                .description(transaction.getDescription())
-                .status(TransactionResponse.StatusEnum.fromValue(transaction.getStatus()))
-                .createdAt(transaction.getInitiatedAt().atZone(ZoneId.systemDefault()).toOffsetDateTime())
-                .updatedAt(transaction.getUpdatedAt().atZone(ZoneId.systemDefault()).toOffsetDateTime())
+    public RewardResponse constructRewardResponse(Reward reward){
+        return RewardResponse.builder()
+                .rewardId(reward.getRewardId())
+                .transactionId(reward.getTransactionId())
+                .rewardType(reward.getRewardType())
+                .description(reward.getRewardDescription())
+                .rewardValue(reward.getRewardValue())
+                .userId(reward.getUserId())
+                .createdAt(reward.getCreatedAt().toInstant().atZone(ZoneId.systemDefault()).toOffsetDateTime())
                 .build();
     }
+
+
 
 }
