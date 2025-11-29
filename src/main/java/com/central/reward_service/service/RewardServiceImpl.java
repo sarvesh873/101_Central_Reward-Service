@@ -67,7 +67,7 @@ public class RewardServiceImpl implements RewardService {
                 .rewardType(selectedRule.getRewardType())
                 .rewardDescription(selectedRule.getDescription())
                 .rewardValue(rewardValue)
-                .rewardRuleId(selectedRule.getId())
+                .rewardRule(selectedRule)
                 .redeemCode("#@/*-+78(@)")
                 .build();
         rewardRepository.save(reward);

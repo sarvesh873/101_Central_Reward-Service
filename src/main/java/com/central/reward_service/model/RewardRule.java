@@ -3,6 +3,7 @@ package com.central.reward_service.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Represents a specific reward outcome (e.g., "₹50 Cashback")
@@ -36,4 +37,15 @@ public class RewardRule {
     private int weight; // e.g., 90 for "Better Luck Next Time", 1 for "iPhone"
 
     private boolean active; // To turn off rewards without deleting rows
+
+    /**
+     * MAPPING: Defines the One-to-Many relationship to the Reward entity.
+     *
+     * mappedBy = "rewardRule": Points to the field in the 'Reward' class that owns the relationship (the @ManyToOne side).
+     * cascade = CascadeType.REMOVE: If a RewardRule is deleted, all associated Reward records are also deleted,
+     * which resolves the foreign key constraint violation issue during data initialization.
+     * orphanRemoval = true: Ensures child entities are removed if they are unlinked from the parent collection.
+     */
+    @OneToMany(mappedBy = "rewardRule", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Reward> rewards;
 }

@@ -41,14 +41,6 @@ public class Reward {
     @Column(nullable = false)
     private Double transactionAmount;
 
-    // --- Reward Details (Copied from RewardRule) ---
-
-    /**
-     * NEW: Foreign key referencing the specific RewardRule that generated this reward.
-     */
-    @Column(nullable = false)
-    private Long rewardRuleId; // Links back to the reward_rules table primary key
-
     @Column(nullable = false, length = 50)
     private String rewardType;
 
@@ -70,6 +62,15 @@ public class Reward {
     private Timestamp expiresAt; // NEW: When the reward coupon expires.
 
     private Timestamp claimedAt;
+
+    /**
+     * MAPPING: Defines the Many-to-One relationship to the parent RewardRule.
+     * The @JoinColumn specifies the foreign key column in the 'rewards' table
+     * that links to the primary key (id) of the 'reward_rules' table.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reward_rule_id", nullable = false) // Explicitly set the name
+    private RewardRule rewardRule;
 
     @PrePersist
     public void prePersist() {
