@@ -1,40 +1,40 @@
 -- Drop tables if they exist (be careful with this in production)
-DROP TABLE IF EXISTS rewards CASCADE;
-DROP TABLE IF EXISTS reward_rules CASCADE;
+-- DROP TABLE IF EXISTS rewards CASCADE;
+-- DROP TABLE IF EXISTS reward_rules CASCADE;
 
 -- Create reward_rules table
-CREATE TABLE IF NOT EXISTS reward_rules (
-    id BIGSERIAL PRIMARY KEY,
-    tier_name VARCHAR(50) NOT NULL,
-    min_transaction_amount DECIMAL(19,2) NOT NULL,
-    reward_type VARCHAR(50) NOT NULL,
-    description VARCHAR(255) NOT NULL,
-    reward_value DECIMAL(19,2),
-    weight INT NOT NULL,
-    active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- CREATE TABLE IF NOT EXISTS reward_rules (
+--     id BIGSERIAL PRIMARY KEY,
+--     tier_name VARCHAR(50) NOT NULL,
+--     min_transaction_amount DECIMAL(19,2) NOT NULL,
+--     reward_type VARCHAR(50) NOT NULL,
+--     description VARCHAR(255) NOT NULL,
+--     reward_value DECIMAL(19,2),
+--     weight INT NOT NULL,
+--     active BOOLEAN NOT NULL DEFAULT true,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );
 
--- Create rewards table
-CREATE TABLE IF NOT EXISTS rewards (
-    reward_id BIGSERIAL PRIMARY KEY,
-    user_id VARCHAR(50) NOT NULL,
-    transaction_id VARCHAR(100) NOT NULL UNIQUE,
-    transaction_amount DECIMAL(19,2) NOT NULL,
-    reward_rule_id BIGINT NOT NULL,
-    reward_type VARCHAR(50) NOT NULL,
-    reward_description VARCHAR(255) NOT NULL,
-    reward_value DECIMAL(19,2) NOT NULL,
-    redeem_code VARCHAR(100),
-    created_at TIMESTAMP NOT NULL,
-    expires_at TIMESTAMP,
-    claimed_at TIMESTAMP,
-    FOREIGN KEY (reward_rule_id) REFERENCES reward_rules(id)
-);
-
--- Create indexes for better performance
-CREATE INDEX idx_rewards_user_id ON rewards(user_id);
-CREATE INDEX idx_rewards_transaction_id ON rewards(transaction_id);
-CREATE INDEX idx_reward_rules_min_amount ON reward_rules(min_transaction_amount);
-CREATE INDEX idx_reward_rules_active ON reward_rules(active);
+-- -- Create rewards table
+-- CREATE TABLE IF NOT EXISTS rewards (
+--     reward_id BIGSERIAL PRIMARY KEY,
+--     user_id VARCHAR(50) NOT NULL,
+--     transaction_id VARCHAR(100) NOT NULL UNIQUE,
+--     transaction_amount DECIMAL(19,2) NOT NULL,
+--     reward_rule_id BIGINT NOT NULL,
+--     reward_type VARCHAR(50) NOT NULL,
+--     reward_description VARCHAR(255) NOT NULL,
+--     reward_value DECIMAL(19,2) NOT NULL,
+--     redeem_code VARCHAR(100),
+--     created_at TIMESTAMP NOT NULL,
+--     expires_at TIMESTAMP,
+--     claimed_at TIMESTAMP,
+--     FOREIGN KEY (reward_rule_id) REFERENCES reward_rules(id)
+-- );
+--
+-- -- Create indexes for better performance
+-- CREATE INDEX idx_rewards_user_id ON rewards(user_id);
+-- CREATE INDEX idx_rewards_transaction_id ON rewards(transaction_id);
+-- CREATE INDEX idx_reward_rules_min_amount ON reward_rules(min_transaction_amount);
+-- CREATE INDEX idx_reward_rules_active ON reward_rules(active);

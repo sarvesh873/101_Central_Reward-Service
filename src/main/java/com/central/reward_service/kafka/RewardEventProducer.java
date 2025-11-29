@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 @Component
 public class RewardEventProducer {
-    private static final String REWARD_TOPIC = "reward-generated-topic";
+    private static final String REWARD_TOPIC = "reward-generated-events";
 
     private final KafkaTemplate<String, byte[]> kafkaTemplate;
 
@@ -46,9 +46,9 @@ public class RewardEventProducer {
                     .setTransactionId(reward.getTransactionId())
                     .setUserId(reward.getUserId())
                     .setRewardType(RewardType.valueOf(reward.getRewardType()))
-                    .setRewardValue(String.valueOf(reward.getRewardValue() != null ? reward.getRewardValue() : 0.0))
+                    .setRewardValue(reward.getRewardValue())
                     .setRewardDescription(reward.getRewardDescription())
-                    .setTransactionAmount(String.valueOf(reward.getTransactionAmount() != null ? reward.getTransactionAmount() : 0.0))
+                    .setTransactionAmount(reward.getTransactionAmount())
                     .setCreatedAt(convertToTimestamp(reward.getCreatedAt()))
                     .setNotificationMessage(reward.getRewardDescription())
                     .build();

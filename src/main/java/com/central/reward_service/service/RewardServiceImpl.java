@@ -1,6 +1,7 @@
 package com.central.reward_service.service;
 
 
+import com.central.reward_service.kafka.RewardEventProducer;
 import com.central.reward_service.model.Reward;
 import com.central.reward_service.model.RewardRule;
 import com.central.reward_service.repository.RewardRepository;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,8 @@ public class RewardServiceImpl implements RewardService {
 
     @Autowired
     private ServiceUtils serviceUtils;
+    @Autowired
+    private RewardEventProducer rewardEventProducer;
     @Override
     @Transactional
     public ResponseEntity<RewardResponse>  processTransaction(RewardRequest request) {
@@ -53,17 +57,30 @@ public class RewardServiceImpl implements RewardService {
         RewardRule selectedRule = selectWeightedReward(applicableRules);
 
         // 5. Save & Return
+        // Handle null rewardValue by defaulting to 0.0
+        Double rewardValue = selectedRule.getRewardValue() != null ? selectedRule.getRewardValue() : 0.0;
+        
         Reward reward = Reward.builder()
                 .userId(request.getUserId())
                 .transactionId(request.getTransactionId())
                 .transactionAmount(request.getTransactionAmount())
                 .rewardType(selectedRule.getRewardType())
                 .rewardDescription(selectedRule.getDescription())
-                .rewardValue(selectedRule.getRewardValue())
+                .rewardValue(rewardValue)
                 .rewardRuleId(selectedRule.getId())
                 .redeemCode("#@/*-+78(@)")
                 .build();
         rewardRepository.save(reward);
+
+        // 6. Send Reward Event to Kafka
+
+        try{
+            rewardEventProducer.sendRewardEvent(reward);
+            log.info("Transaction event sent successfully with Transaction ID : {}", reward.getTransactionId());
+        }
+        catch (Exception e){
+            log.error("Failed to create transaction: {}", e.getMessage(), e);
+        }
 
         return ResponseEntity.ok(serviceUtils.constructRewardResponse(reward));
     }

@@ -6,11 +6,24 @@ option java_multiple_files = true;
 
 // Reward type enum
 enum RewardType {
-  CASHBACK = 0;
-  POINTS = 1;
-  DISCOUNT = 2;
-  REFERRAL = 3;
-  WELCOME = 4;
+  BETTER_LUCK = 0;
+  CASHBACK = 1;
+  POINTS = 2;
+  COUPON = 3;
+  VOUCHER = 4;
+  DISCOUNT = 5;
+  JACKPOT = 6;
+  SCRATCH_CARD = 7;
+  MOVIE_TICKET = 8;
+  GIFT_CARD = 9;
+  SUPER_JACKPOT = 10;
+  HOTEL_VOUCHER = 11;
+  MEGA_CASHBACK = 12;
+  FLIGHT_VOUCHER = 13;
+  ULTRA_JACKPOT = 14;
+  MEGA_JACKPOT = 15;
+  ELITE_JACKPOT = 16;
+  SUPER_ELITE = 17;
 }
 
 message RewardEvent {
@@ -18,9 +31,9 @@ message RewardEvent {
   string transaction_id = 2;          // Associated transaction ID
   string user_id = 3;                 // User who received the reward
   RewardType reward_type = 4;         // Type of reward
-  string reward_value = 5;            // Value of the reward
+  double reward_value = 5;            // Value of the reward
   string reward_description = 6;       // Description of the reward
-  string transaction_amount = 7;       // Original transaction amount
+  double transaction_amount = 7;       // Original transaction amount
   
   // Timestamp when the reward was created
   google.protobuf.Timestamp created_at = 8;
