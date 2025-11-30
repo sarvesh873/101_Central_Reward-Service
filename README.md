@@ -194,14 +194,13 @@ Sample deployment manifests are provided in the `k8s/` directory.
 
 ## ✅ TODO
 
-- [ ] Add admin interface for managing reward rules
-- [ ] Implement topic and group names through application properties
-- [ ] Create admin API endpoints for reward rule management
+- [x] Add admin interface for managing reward rules
+- [x] Implement topic and group names through application properties
+- [x] Create admin API endpoints for reward rule management
 - [ ] Add authentication and authorization for admin endpoints
-- [ ] Implement input validation for reward rule creation/updates
-- [ ] Add API documentation for admin endpoints
-- [ ] Write unit and integration tests for new features
-- [ ] Add monitoring and logging for admin operations
+- [x] Add API documentation for admin endpoints
+- [x] Write unit and integration tests for new features
+- [x] Add monitoring and logging for admin operations
 
 ## 📝 License
 

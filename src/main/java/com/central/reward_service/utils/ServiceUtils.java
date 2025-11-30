@@ -8,7 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.openapitools.model.RewardResponse;
-import java.math.BigDecimal;
+import org.openapitools.model.RewardRuleResponse;
+import org.openapitools.model.RewardRuleRequest;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,43 @@ public class ServiceUtils {
                 .build();
     }
 
+    public static RewardRuleResponse constructRewardRuleResponse(RewardRule rule){
+        return RewardRuleResponse.builder()
+                .id(rule.getId())
+                .minTransactionAmount(rule.getMinTransactionAmount())
+                .active(rule.isActive())
+                .tierName(rule.getTierName())
+                .weight(rule.getWeight())
+                .description(rule.getDescription())
+                .rewardType(rule.getRewardType())
+                .rewardValue(rule.getRewardValue())
+                .build();
+    }
+
+    // Add these methods to ServiceUtils.java
+
+    public static RewardRule constructRewardRuleFromRequest(RewardRuleRequest request) {
+        return RewardRule.builder()
+                .tierName(request.getTierName())
+                .minTransactionAmount(request.getMinTransactionAmount())
+                .rewardType(request.getRewardType())
+                .description(request.getDescription())
+                .rewardValue(request.getRewardValue())
+                .weight(request.getWeight())
+                .active(request.getActive())
+                .build();
+    }
+
+    public static RewardRule updateRewardRuleFromRequest(RewardRule rule, RewardRuleRequest request) {
+        rule.setTierName(request.getTierName());
+        rule.setMinTransactionAmount(request.getMinTransactionAmount());
+        rule.setRewardType(request.getRewardType());
+        rule.setDescription(request.getDescription());
+        rule.setRewardValue(request.getRewardValue());
+        rule.setWeight(request.getWeight());
+        rule.setActive(request.getActive());
+        return rule;
+    }
 
 
 }

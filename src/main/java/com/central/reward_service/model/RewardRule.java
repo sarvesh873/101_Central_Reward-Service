@@ -1,7 +1,11 @@
 package com.central.reward_service.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -11,7 +15,10 @@ import java.util.List;
  */
 @Entity
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "reward_rules")
+@Builder
 public class RewardRule {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
