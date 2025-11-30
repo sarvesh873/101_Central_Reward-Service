@@ -4,6 +4,7 @@ import com.central.reward_service.service.RewardService;
 import com.google.protobuf.InvalidProtocolBufferException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -14,7 +15,10 @@ import org.openapitools.model.RewardRequest;
 @Slf4j
 @Component
 public class TransactionEventConsumer {
-    private static final String SENDER_TOPIC = "txn-sender-events";
+
+    private static final String SENDER_TOPIC = "${kafka.topics.reward_service.receiver}";
+
+    private static final String REWARD_SERVICE_GROUP_ID = "${spring.kafka.consumer.group-id}";
 
     private final KafkaTemplate<String, byte[]> kafkaTemplate;
 
@@ -27,7 +31,7 @@ public class TransactionEventConsumer {
         this.rewardService = rewardService;
     }
 
-    @KafkaListener(topics = SENDER_TOPIC, groupId = "reward-service")
+    @KafkaListener(topics = SENDER_TOPIC, groupId = REWARD_SERVICE_GROUP_ID)
     public void handleSenderTransaction(byte[] event) {
         long startTime = System.currentTimeMillis();
         String transactionId = "";

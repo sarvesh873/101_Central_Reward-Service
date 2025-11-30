@@ -5,6 +5,7 @@ import com.google.protobuf.Timestamp;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,9 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 @Component
 public class RewardEventProducer {
-    private static final String REWARD_TOPIC = "reward-generated-events";
+
+    @Value("${kafka.topics.reward_service.sender}")
+    private static String REWARD_TOPIC;
 
     private final KafkaTemplate<String, byte[]> kafkaTemplate;
 

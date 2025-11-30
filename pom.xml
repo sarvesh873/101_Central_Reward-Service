@@ -257,6 +257,7 @@
                                         <include>**/service/**</include>
                                         <include>**/controller/**</include>
                                         <include>**/utils/**</include>
+                                        <include>**/kafka/**</include>
                                     </includes>
                                     <excludes>
                                         <!-- Keep these exclusions as a fallback -->
@@ -266,7 +267,7 @@
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.00</minimum>
+                                            <minimum>0.80</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
