@@ -15,4 +15,11 @@ public interface RewardRuleRepository extends JpaRepository<RewardRule, Long> {
      * without deleting the rows.
      */
     List<RewardRule> findByActiveTrue();
+
+    /**
+     * Finds all reward rules for a specific tier name.
+     * @param tierName The name of the tier to find rules for
+     * @return List of reward rules matching the tier name
+     */
+    List<RewardRule> findByTierName(String tierName);
 }

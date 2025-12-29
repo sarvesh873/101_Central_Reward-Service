@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-
+import com.central.reward_service.constants.Constants;
 import org.openapitools.model.ErrorResponse;
 
 /**
@@ -25,11 +25,13 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponse> handleBadRequest(IllegalStateException ex) {
-        Double errorCode = 400.06;
-        String description = "Transaction has already been awarded a reward";
-        String errorType = HttpStatus.BAD_REQUEST.getReasonPhrase();
-        String errorMessage = ex.getMessage();
-        return generateErrorResponse(errorCode, description, errorType, errorMessage, HttpStatus.BAD_REQUEST);
+        return generateErrorResponse(
+            Constants.ERROR_CODE_DUPLICATE_TRANSACTION,
+            Constants.ERROR_DESC_DUPLICATE_TRANSACTION,
+            HttpStatus.BAD_REQUEST.getReasonPhrase(),
+            ex.getMessage(),
+            HttpStatus.BAD_REQUEST
+        );
     }
 
     /**
@@ -40,11 +42,13 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleConflict(DataIntegrityViolationException ex) {
-        Double errorCode = 400.02;
-        String description = "Data integrity violation";
-        String errorType = HttpStatus.CONFLICT.getReasonPhrase();
-        String errorMessage = ex.getMostSpecificCause().getMessage();
-        return generateErrorResponse(errorCode, description, errorType, errorMessage, HttpStatus.CONFLICT);
+        return generateErrorResponse(
+            Constants.ERROR_CODE_DATA_INTEGRITY,
+            Constants.ERROR_DESC_DATA_INTEGRITY,
+            HttpStatus.CONFLICT.getReasonPhrase(),
+            ex.getMostSpecificCause().getMessage(),
+            HttpStatus.CONFLICT
+        );
     }
 
     /**
@@ -55,12 +59,13 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(RewardClaimException.class)
     public ResponseEntity<ErrorResponse> handleUserDoesNotExistException(RewardClaimException ex) {
-        Double errorCode = 404.06;
-        String description = "Reward Already claimed or Reward expired";
-        String errorType = HttpStatus.IM_USED.getReasonPhrase();
-        String errorMessage = ex.getMessage();
-
-        return generateErrorResponse(errorCode, description, errorType, errorMessage, HttpStatus.NOT_FOUND);
+        return generateErrorResponse(
+            Constants.ERROR_CODE_REWARD_CLAIM,
+            Constants.ERROR_DESC_REWARD_CLAIM,
+            HttpStatus.IM_USED.getReasonPhrase(),
+            ex.getMessage(),
+            HttpStatus.NOT_FOUND
+        );
     }
 
     /**

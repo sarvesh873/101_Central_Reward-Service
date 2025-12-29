@@ -9,7 +9,7 @@ import com.central.reward_service.model.RewardRule;
 import com.central.reward_service.model.RewardStatus;
 import com.central.reward_service.repository.RewardRepository;
 import com.central.reward_service.utils.ServiceUtils;
-import jakarta.persistence.EntityNotFoundException;
+import com.central.reward_service.constants.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,8 +48,9 @@ public class RewardServiceImpl implements RewardService {
     @Transactional
     public ResponseEntity<RewardResponse>  processTransaction(RewardRequest request) {
         // 1. Idempotency Check
+        log.info(Constants.LOG_REWARD_PROCESSING_START, request.getTransactionId());
         if (rewardRepository.existsByTransactionId(request.getTransactionId())) {
-            throw new IllegalStateException("Transaction already rewarded");
+            throw new IllegalStateException(Constants.TRANSACTION_ALREADY_REWARDED);
         }
 
         // 2. Get Rules from Caffeine Cache (Nano-second latency)
@@ -81,7 +82,7 @@ public class RewardServiceImpl implements RewardService {
 
         try{
             rewardEventProducer.sendRewardEvent(reward);
-            log.info("Transaction event sent successfully with Transaction ID : {}", reward.getTransactionId());
+            log.info(Constants.LOG_REWARD_PROCESSED, request.getTransactionId());
         }
         catch (Exception e){
             log.error("Failed to create transaction: {}", e.getMessage(), e);
@@ -95,7 +96,7 @@ public class RewardServiceImpl implements RewardService {
     public ResponseEntity<RewardClaimResponse> claimReward(Long rewardId) {
         // 1. Fetch the reward
         Reward reward = rewardRepository.findById(rewardId)
-                .orElseThrow(() -> new RewardNotFoundException("Reward not found with ID: " + rewardId));
+                .orElseThrow(() -> new RewardNotFoundException(Constants.REWARD_NOT_FOUND + rewardId));
 
         // 2. Check for expiry
         if (reward.getStatus() == RewardStatus.EXPIRED ||
@@ -103,12 +104,13 @@ public class RewardServiceImpl implements RewardService {
                         reward.getExpiresAt().before(new Timestamp(System.currentTimeMillis())))) {
             reward.setStatus(RewardStatus.EXPIRED);
             rewardRepository.save(reward);
-            throw new RewardClaimException("Reward with ID " + rewardId + " has expired.");
+            log.warn(Constants.LOG_REWARD_EXPIRED, rewardId);
+            throw new RewardClaimException(Constants.REWARD_ALREADY_CLAIMED);
         }
 
         // 3. Verify it's in UNCLAIMED state (not already claimed)
         if (reward.getStatus() != RewardStatus.UNCLAIMED) {
-            throw new RewardClaimException("Reward with ID " + rewardId + " is in an invalid state: " + reward.getStatus());
+            throw new RewardClaimException(Constants.INVALID_REWARD_STATE + reward.getStatus());
         }
 
         // 4. Generate Redeem Code and Update Status
@@ -121,6 +123,7 @@ public class RewardServiceImpl implements RewardService {
         reward.setStatus(RewardStatus.CLAIMED);
         reward.setClaimedAt(new Timestamp(System.currentTimeMillis()));
         rewardRepository.save(reward);
+        log.info(Constants.LOG_REWARD_CLAIMED, rewardId);
 
         // 5. Create and return the response
         RewardClaimResponse response = RewardClaimResponse.builder()
@@ -139,7 +142,7 @@ public class RewardServiceImpl implements RewardService {
     @Cacheable(value = "user_rewards", key = "#rewardId")
     public ResponseEntity<RewardResponse>  getRewardById(Long rewardId) {
         Reward reward = rewardRepository.findById(rewardId)
-                .orElseThrow(() -> new RewardNotFoundException("Reward not found with ID: " + rewardId));
+                .orElseThrow(() -> new RewardNotFoundException(Constants.REWARD_NOT_FOUND + rewardId));
         return ResponseEntity.ok(serviceUtils.constructRewardResponse(reward));
     }
 
@@ -157,21 +160,21 @@ public class RewardServiceImpl implements RewardService {
 //    ## Private Helper Methods
 
     private List<RewardRule> determineApplicableRules(TreeMap<Double, List<RewardRule>> rules, Double amount) {
-        log.info("Processing transaction amount: {}", amount);
+        log.info(Constants.LOG_TRANSACTION_PROCESSING, amount);
 
         // Efficiently find the tier: floorEntry finds the closest key <= amount
         Map.Entry<Double, List<RewardRule>> entry = rules.floorEntry(amount);
 
         if (entry == null || entry.getValue().isEmpty()) {
             // No tier found, or the lowest tier is empty: throw config error
-            throw new IllegalStateException("Transaction amount does not fall into any configured reward tier.");
+            throw new IllegalStateException(Constants.NO_REWARD_TIER);
         }
         return entry.getValue();
     }
 
     private RewardRule selectWeightedReward(List<RewardRule> options) {
         if (options == null || options.isEmpty()) {
-            throw new IllegalStateException("Configuration Error: No rewards found for this tier");
+            throw new IllegalStateException(Constants.NO_REWARDS_CONFIGURED);
         }
 
         // If there's only one option, return it immediately
